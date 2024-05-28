@@ -73,6 +73,7 @@ void print_readyQ();
 
 void FCFS_scheduling(int numProcess);
 void SJF_scheduling(int numProcess);
+void SJF_sort();
 
 //
 void init_queue(pProcess *queue, int *front, int *rear, int *size)
@@ -174,6 +175,30 @@ void print_readyQ()
     i = (i + 1) % DEGREE_OF_MP;
   }
   printf("\n");
+}
+
+void SJF_sort(){
+  if(readyQ_size<2){
+    return;
+  }else{
+    int i=readyQ_front;
+    int j=0;
+    pProcess tmp[DEGREE_OF_MP]={NULL, };
+    while(i!=readyQ_rear){
+      tmp[j]=readyQ[i];
+      j++;
+      i=(i+1)%DEGREE_OF_MP;
+    }
+    qsort(tmp, j, sizeof(pProcess), CPUremainCompare);
+    
+    i=readyQ_front;
+    j=0;
+    while(i!=readyQ_rear){
+      readyQ[i]=tmp[j];
+      j++;
+      i=(i+1)%DEGREE_OF_MP;
+    }
+  }
 }
 
 void print_terminateQ()
@@ -339,21 +364,23 @@ void SJF_scheduling(int numProcess)
   int idle = 0;
   pProcess runProcess = NULL;
 
-  qsort(jobQ, numProcess, sizeof(pProcess), CPUremainCompare);
+  qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
   print_jobQ();
 
-  printf("<FCFS scheduling>\n");
+  printf("<SJF scheduling>\n");
   while (numTerminate != numProcess)
   {
     while ((jobQ_size > 0) && (jobQ[jobQ_front]->arrival == time))
     {
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
+      SJF_sort();
       printf("time: %d submission P%d \n", time, submission->pid);
     }
 
     if (readyQ_size > 0 && runProcess == NULL)
     {
+      SJF_sort();
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       printf("time: %d start P%d\n", time, runProcess->pid);
@@ -371,8 +398,8 @@ void SJF_scheduling(int numProcess)
       {
         printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
-        // runProcess->tmpArrival=time;
-
+        
+        SJF_sort();
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
@@ -390,6 +417,8 @@ void SJF_scheduling(int numProcess)
         printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
+
+        SJF_sort();
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
 
         if (runProcess != NULL)
@@ -422,12 +451,12 @@ int main(int argc, char *argv[])
     printf("invalid number\n");
     return 0;
   }
-  printf("Time quantum: ");
-  scanf("%d", &tq);
+  //printf("Time quantum: ");
+  //scanf("%d", &tq);
 
   create_process(numProcess, 0);
-  FCFS_scheduling(numProcess);
-  //SJF_scheduling(numProcess);
+  //FCFS_scheduling(numProcess);
+  SJF_scheduling(numProcess);
   // PRI_alg(num_process);
   // PRESJF_alg(num_process);
   // PREPRI_alg(num_process);
