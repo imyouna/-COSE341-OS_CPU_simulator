@@ -472,9 +472,10 @@ void SRJF_scheduling(int numProcess)
       SJF_sort();
       printf("time: %d submission P%d \n", time, submission->pid);
     }
+    IOProcess(time);
+    SJF_sort();
     if (readyQ_size > 0 && runProcess == NULL)
     {
-      SJF_sort();
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       printf("time: %d start P%d\n", time, runProcess->pid);
@@ -484,34 +485,16 @@ void SRJF_scheduling(int numProcess)
       printf("time: %d idle\n", time);
       idle++;
     }
-    else if (IOProcess(time))
-    { // IO operate and exist process s.t. waitingQ->readyQ
-      SJF_sort();
-      if (runProcess != NULL && (runProcess->CPUburst_remain > readyQ[readyQ_front]->CPUburst_remain))
-      { // preemption
-        runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-        printf("time: %d P%d remain CPU: %d\n", time, runProcess->pid, runProcess->CPUburst_remain);
-
-        enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
-        runProcess->tmpArrival = time;
-        printf("time: %d preemptive P%d ", time, runProcess->pid);
-
-        runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
-        (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-        SJF_sort();
-        printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
-      }
-    }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
       printf("time: %d P%d remain CPU: %d\n", time, runProcess->pid, runProcess->CPUburst_remain);
-      if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) 
+      
+      if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart)
       { // IO operation
         printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
-        SJF_sort();
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
@@ -541,7 +524,7 @@ void SRJF_scheduling(int numProcess)
         else if (numTerminate != numProcess)
           idle++;
       }
-      else if (readyQ_size>0 && (runProcess->CPUburst_remain > readyQ[readyQ_front]->CPUburst_remain))
+      else if (readyQ_size > 0 && (runProcess->CPUburst_remain > readyQ[readyQ_front]->CPUburst_remain))
       { // preemption
         enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
         runProcess->tmpArrival = time;
@@ -550,7 +533,7 @@ void SRJF_scheduling(int numProcess)
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         SJF_sort();
-        printf("start new P%d, remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
+        printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
       }
     }
     time++;
