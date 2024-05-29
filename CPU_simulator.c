@@ -212,7 +212,6 @@ pProcess dequeue(pProcess *queue, int *front, int *size)
 {
   if (*size == 0)
   {
-    // printf("dqueue fail!!\n");
     return NULL;
   }
   else
@@ -303,13 +302,11 @@ void priority_sort()
 
 void print_terminateQ()
 {
-  // printf("<terminated>\n");
   int i = terminateQ_front;
   double avg_turnaround = 0;
   double avg_waiting = 0;
   while (i != terminateQ_rear)
   {
-    // printf("P%d turnaround: %d waiting time: %d\n", terminateQ[i]->pid, terminateQ[i]->turnaroundTime, terminateQ[i]->waitingTime);
     avg_turnaround += terminateQ[i]->turnaroundTime;
     avg_waiting += terminateQ[i]->waitingTime;
     i = (i + 1) % DEGREE_OF_MP;
@@ -324,7 +321,6 @@ int IOProcess(int time)
   while (cnt > 0)
   {
     pProcess currentProcess = dequeue(waitQ, &waitQ_front, &waitQ_size);
-    // printf("IO operation: P%d remain IO burst %d\n", currentProcess->pid, currentProcess->IOburst_remain);
 
     currentProcess->IOburst_remain--;
 
@@ -332,14 +328,12 @@ int IOProcess(int time)
     {
       currentProcess->tmpArrival = time;
       enqueue(readyQ, currentProcess, &readyQ_rear, &readyQ_size);
-      // printf("time: %d, IO done: P%d go to ready queue remain CPU: %d\n", time, currentProcess->pid, currentProcess->CPUburst_remain);
       //  currentProcess->tmpArrival = time;
       done = 1;
     }
     else
     {
       enqueue(waitQ, currentProcess, &waitQ_rear, &waitQ_size); // put back in waitQ if not done
-      // printf("time: %d P%d IO remain: %d\n", time, currentProcess->pid, currentProcess->IOburst_remain);
     }
     cnt--;
   }
@@ -402,36 +396,30 @@ void FCFS_scheduling(int numProcess)
     {
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     if (readyQ_size > 0 && runProcess == NULL)
     {
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      // printf("time: %d P%d\n", time, runProcess->pid);
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) // IO operation
       {
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
         // runProcess->tmpArrival=time;
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -444,14 +432,12 @@ void FCFS_scheduling(int numProcess)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -498,7 +484,6 @@ void SJF_scheduling(int numProcess)
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
       SJF_sort();
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     SJF_sort();
@@ -506,28 +491,23 @@ void SJF_scheduling(int numProcess)
     {
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      // printf("time: %d P%d\n", time, runProcess->pid);
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) // IO operation
       {
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -540,14 +520,12 @@ void SJF_scheduling(int numProcess)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -594,7 +572,6 @@ void SRJF_scheduling(int numProcess)
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
       SJF_sort();
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     SJF_sort();
@@ -602,29 +579,24 @@ void SRJF_scheduling(int numProcess)
     {
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      // printf("time: %d P%d remain CPU: %d\n", time, runProcess->pid, runProcess->CPUburst_remain);
 
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart)
       { // IO operation
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -637,7 +609,6 @@ void SRJF_scheduling(int numProcess)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
 
@@ -646,7 +617,6 @@ void SRJF_scheduling(int numProcess)
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -660,12 +630,10 @@ void SRJF_scheduling(int numProcess)
       { // preemption
         enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
         runProcess->tmpArrival = time;
-        // printf("time: %d preemptive P%d ", time, runProcess->pid);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         SJF_sort();
-        // printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
         add_ganttChart(runProcess->pid, time);
       }
     }
@@ -704,7 +672,6 @@ void priority_scheduling(int numProcess)
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
       priority_sort();
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     priority_sort();
@@ -712,28 +679,23 @@ void priority_scheduling(int numProcess)
     {
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      // printf("time: %d P%d\n", time, runProcess->pid);
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart)
       { // IO operation
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -746,14 +708,12 @@ void priority_scheduling(int numProcess)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -799,7 +759,6 @@ void premptive_priority_scheduling(int numProcess)
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
       priority_sort();
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     priority_sort();
@@ -807,28 +766,23 @@ void premptive_priority_scheduling(int numProcess)
     {
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      // printf("time: %d P%d remain CPU: %d\n", time, runProcess->pid, runProcess->CPUburst_remain);
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart)
       { // IO operation
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -841,7 +795,6 @@ void premptive_priority_scheduling(int numProcess)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
 
@@ -850,7 +803,6 @@ void premptive_priority_scheduling(int numProcess)
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           add_ganttChart(runProcess->pid, time);
         }
@@ -864,12 +816,10 @@ void premptive_priority_scheduling(int numProcess)
       { // preemption
         enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
         runProcess->tmpArrival = time;
-        // printf("time: %d preemptive P%d ", time, runProcess->pid);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         priority_sort();
-        // printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
         add_ganttChart(runProcess->pid, time);
       }
     }
@@ -909,7 +859,6 @@ void RR_sheduling(int numProcess, int timequantum)
     {
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     if (readyQ_size > 0 && runProcess == NULL)
@@ -917,12 +866,10 @@ void RR_sheduling(int numProcess, int timequantum)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       runProcess->timequantum = tq;
-      // printf("time: %d start P%d\n", time, runProcess->pid);
       add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
-      // printf("time: %d idle\n", time);
       idle++;
       add_ganttChart(-1, time);
     }
@@ -930,17 +877,14 @@ void RR_sheduling(int numProcess, int timequantum)
     {
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
       runProcess->timequantum = runProcess->timequantum - 1;
-      // printf("time: %d P%d\n", time, runProcess->pid);
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) // IO operation
       {
-        // printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
         runProcess->timequantum = tq; // timequantum reset
         enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           runProcess->timequantum = tq;
           add_ganttChart(runProcess->pid, time);
@@ -954,14 +898,12 @@ void RR_sheduling(int numProcess, int timequantum)
       else if (runProcess->CPUburst_remain == 0) // terminate
       {
         numTerminate++;
-        // printf("time: %d terminate P%d\n", time, runProcess->pid);
         runProcess->turnaroundTime = time - (runProcess->arrival);
         enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
 
         if (runProcess != NULL)
         {
-          // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           runProcess->timequantum = tq;
           add_ganttChart(runProcess->pid, time);
@@ -974,14 +916,12 @@ void RR_sheduling(int numProcess, int timequantum)
       }
       else if (runProcess->timequantum == 0 && readyQ_size > 0) // time slice expired
       {                                                         // Q: ... if P3=4s, tq=2s, p3(1)-p3(2)-p3(3, ready empty)-p4 submission -> p3? or premptive p4? A:... p3
-        // printf("time: %d P%d timelice expired ", time, runProcess->pid);
         runProcess->tmpArrival = time;
         enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
 
         runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
         runProcess->timequantum = tq;
         runProcess->waitingTime += time - (runProcess->tmpArrival);
-        // printf("start P%d\n", runProcess->pid);
         add_ganttChart(runProcess->pid, time);
       }
     }
@@ -1022,7 +962,6 @@ void premptive_priority_RR_scheduling(int numProcess, int timequantum)
       pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
       enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
       priority_sort();
-      // printf("time: %d submission P%d \n", time, submission->pid);
     }
     IOProcess(time);
     priority_sort();
@@ -1097,7 +1036,6 @@ void premptive_priority_RR_scheduling(int numProcess, int timequantum)
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         runProcess->timequantum = tq;
         priority_sort();
-        // printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
         add_ganttChart(runProcess->pid, time);
       }
       else if (readyQ_size > 0 && (runProcess->priority == readyQ[readyQ_front]->priority))
