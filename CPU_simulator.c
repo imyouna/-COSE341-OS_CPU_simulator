@@ -25,10 +25,10 @@ typedef struct process
 typedef Process *pProcess;
 
 // variables
-pProcess job[DEGREE_OF_MP]; //create process and save in "job"
+pProcess job[DEGREE_OF_MP]; // create process and save in "job"
 int job_front, job_rear, job_size;
 
-pProcess jobQ[DEGREE_OF_MP]; //jobQueue in each scheduling (Copy job to jobQ per scheduling)
+pProcess jobQ[DEGREE_OF_MP]; // jobQueue in each scheduling (Copy job to jobQ per scheduling)
 int jobQ_front, jobQ_rear, jobQ_size;
 
 pProcess readyQ[DEGREE_OF_MP];
@@ -98,14 +98,14 @@ void print_jobQ()
   int i = jobQ_front;
   while (i != jobQ_rear)
   {
-    printf("P%d arrival: %d CPU burst: %d, IO burst: %d, IO start: %d priority: %d\n", jobQ[i]->pid, jobQ[i]->arrival, jobQ[i]->CPUburst, jobQ[i]->IOburst, jobQ[i]->IOstart, jobQ[i]->priority);
+    printf("P%d arrival: %d CPU burst: %d, after %d I/O start, IO burst: %d,  priority: %d\n", jobQ[i]->pid, jobQ[i]->arrival, jobQ[i]->CPUburst, jobQ[i]->IOstart, jobQ[i]->IOburst, jobQ[i]->priority);
     i = (i + 1) % DEGREE_OF_MP;
   }
   printf("jobQ size: %d\n", jobQ_size);
   printf("\n");
 }
 
-void create_process(int numProcess, int tq)
+void create_process(int numProcess, int timequantum)
 {
   init_queue(job, &job_front, &job_rear, &job_size);
 
@@ -123,6 +123,7 @@ void create_process(int numProcess, int tq)
     newProcess->arrival = rand() % (numProcess + 1);
     newProcess->tmpArrival = newProcess->arrival;
     newProcess->priority = rand() % numProcess + 1; // 1<=priority<=numProcess
+    newProcess->timequantum = timequantum;
 
     newProcess->CPUburst_remain = newProcess->CPUburst;
     newProcess->IOburst_remain = newProcess->IOburst;
@@ -262,9 +263,10 @@ int IOProcess(int time)
 
     if (currentProcess->IOburst_remain <= 0)
     {
+      currentProcess->tmpArrival = time;
       enqueue(readyQ, currentProcess, &readyQ_rear, &readyQ_size);
       printf("time: %d, IO done: P%d go to ready queue remain CPU: %d\n", time, currentProcess->pid, currentProcess->CPUburst_remain);
-      currentProcess->tmpArrival = time;
+      // currentProcess->tmpArrival = time;
       done = 1;
     }
     else
@@ -747,8 +749,102 @@ void premptive_priority_scheduling(int numProcess)
   printf("CPU idle: %d\n", idle);
 }
 
-void RR_sheduling(int numProcess, int timequantum){
+void RR_sheduling(int numProcess, int timequantum)
+{
+  init_jobQ();
+  init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
+  init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
+  init_queue(terminateQ, &terminateQ_front, &terminateQ_rear, &terminateQ_size);
 
+  int numTerminate = 0; // number of terminated process
+  int time = 0;
+  int idle = 0;
+  pProcess runProcess = NULL;
+
+  int tq = timequantum;
+
+  qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
+  print_jobQ();
+
+  printf("<Round Robin scheduling>\n");
+  while (numTerminate != numProcess)
+  {
+    while ((jobQ_size > 0) && (jobQ[jobQ_front]->arrival == time))
+    {
+      pProcess submission = dequeue(jobQ, &jobQ_front, &jobQ_size);
+      enqueue(readyQ, submission, &readyQ_rear, &readyQ_size); // submission
+      printf("time: %d submission P%d \n", time, submission->pid);
+    }
+    IOProcess(time);
+    if (readyQ_size > 0 && runProcess == NULL)
+    {
+      runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
+      (runProcess->waitingTime) += time - (runProcess->tmpArrival);
+      runProcess->timequantum=tq;
+      printf("time: %d start P%d\n", time, runProcess->pid);
+    }
+    else if (readyQ_size == 0 && runProcess == NULL)
+    {
+      printf("time: %d idle\n", time);
+      idle++;
+    }
+    else if (runProcess != NULL)
+    {
+      runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
+      runProcess->timequantum = runProcess->timequantum - 1;
+      printf("time: %d P%d\n", time, runProcess->pid);
+      if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) // IO operation
+      {
+        printf("time: %d P%d go to waiting queue \n", time, runProcess->pid);
+        runProcess->timequantum = tq; // timequantum reset
+        enqueue(waitQ, runProcess, &waitQ_rear, &waitQ_size);
+
+        runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
+        if (runProcess != NULL)
+        {
+          printf("time: %d start new process: %d\n", time, runProcess->pid);
+          (runProcess->waitingTime) += time - (runProcess->tmpArrival);
+          runProcess->timequantum=tq;
+        }
+        else
+        {
+          idle++;
+        }
+      }
+      else if (runProcess->CPUburst_remain == 0) // terminate
+      {
+        numTerminate++;
+        printf("time: %d terminate P%d\n", time, runProcess->pid);
+        runProcess->turnaroundTime = time - (runProcess->arrival);
+        enqueue(terminateQ, runProcess, &terminateQ_rear, &terminateQ_size);
+        runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
+
+        if (runProcess != NULL)
+        {
+          printf("time: %d start new process: %d\n", time, runProcess->pid);
+          (runProcess->waitingTime) += time - (runProcess->tmpArrival);
+          runProcess->timequantum=tq;
+        }
+        else if (numTerminate != numProcess)
+          idle++;
+      }
+      else if (runProcess->timequantum == 0 && readyQ_size > 0) // time slice expired
+      { // Q: ... if P3=4s, tq=2s, p3(1)-p3(2)-p3(3, ready empty)-p4 submission -> p3? or premptive p4? A:... p3
+        printf("time: %d P%d timelice expired ", time, runProcess->pid);
+        runProcess->tmpArrival = time;
+        enqueue(readyQ, runProcess, &readyQ_rear, &readyQ_size);
+
+        runProcess=dequeue(readyQ, &readyQ_front, &readyQ_size);
+        runProcess->timequantum=tq;
+        runProcess->waitingTime += time - (runProcess->tmpArrival);
+        printf("start P%d\n", runProcess->pid);
+      }
+    }
+    time++;
+  }
+  // printf("\n<<all process ended>>\n");
+  print_terminateQ();
+  printf("CPU idle: %d\n", idle);
 }
 
 int main(int argc, char *argv[])
