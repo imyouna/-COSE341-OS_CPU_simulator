@@ -24,7 +24,7 @@ typedef struct process
 } Process;
 typedef Process *pProcess;
 
-typedef struct ganttChatEntry
+typedef struct ganttChartEntry
 {
   int pid;
   int start;
@@ -47,15 +47,15 @@ int waitQ_front, waitQ_rear, waitQ_size;
 pProcess terminateQ[DEGREE_OF_MP];
 int terminateQ_front, terminateQ_rear, terminateQ_size;
 
-GanttchatEntry ganttChat[DEGREE_OF_MP * 50];
-int ganttChat_idx;
+GanttchatEntry ganttChart[DEGREE_OF_MP * 50];
+int ganttChart_idx;
 
 // functions
 void init_queue(pProcess *queue, int *front, int *rear, int *size);
 void init_jobQ(int numProcess);
-void init_ganttChat();
-void add_ganttChat(int pid, int time);
-void print_ganttChat();
+void init_ganttChart();
+void add_ganttChart(int pid, int time);
+void print_ganttChart();
 
 void create_process(int numProcess, int tq);
 void enqueue(pProcess *queue, pProcess newProcess, int *rear, int *size);
@@ -108,51 +108,51 @@ void init_jobQ(int numProcess)
   }
 }
 
-void init_ganttChat()
+void init_ganttChart()
 {
-  ganttChat_idx = 0;
+  ganttChart_idx = 0;
   for (int i = 0; i < DEGREE_OF_MP * 50; i++)
   {
-    ganttChat[i].pid = -1;
-    ganttChat[i].start = 0;
-    ganttChat[i].end = 0;
+    ganttChart[i].pid = -1;
+    ganttChart[i].start = 0;
+    ganttChart[i].end = 0;
   }
 }
 
-void add_ganttChat(int pid, int time)
+void add_ganttChart(int pid, int time)
 {
-  if (ganttChat[ganttChat_idx].pid == pid)
+  if (ganttChart[ganttChart_idx].pid == pid)
   {
     return;
   }
   else if (pid == -2)
   { // finish signal
-    ganttChat[ganttChat_idx].end = time;
+    ganttChart[ganttChart_idx].end = time;
   }
   else
   {
-    ganttChat[ganttChat_idx].end = time;
-    ganttChat_idx++;
-    ganttChat[ganttChat_idx].pid = pid;
-    ganttChat[ganttChat_idx].start = time;
+    ganttChart[ganttChart_idx].end = time;
+    ganttChart_idx++;
+    ganttChart[ganttChart_idx].pid = pid;
+    ganttChart[ganttChart_idx].start = time;
     return;
   }
 }
 
-void print_ganttChat()
+void print_ganttChart()
 {
-  printf("<<Ghant Chat>>\n");
-  for (int i = 0; i <= ganttChat_idx; i++)
+  printf("<<Gant Chart>>\n");
+  for (int i = 0; i <= ganttChart_idx; i++)
   {
-    if (ganttChat[i].start != ganttChat[i].end)
+    if (ganttChart[i].start != ganttChart[i].end)
     {
-      if (ganttChat[i].pid == -1)
+      if (ganttChart[i].pid == -1)
       { // idle
-        printf("[%d--idle--%d]\n", ganttChat[i].start, ganttChat[i].end);
+        printf("[%d--idle--%d]\n", ganttChart[i].start, ganttChart[i].end);
       }
       else
       {
-        printf("[%d--P%d--%d]\n", ganttChat[i].start, ganttChat[i].pid, ganttChat[i].end);
+        printf("[%d--P%d--%d]\n", ganttChart[i].start, ganttChart[i].pid, ganttChart[i].end);
       }
     }
   }
@@ -379,7 +379,7 @@ int priorityCompare(const void *a, const void *b)
 
 void FCFS_scheduling(int numProcess)
 {
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -409,13 +409,13 @@ void FCFS_scheduling(int numProcess)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -432,12 +432,12 @@ void FCFS_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -452,29 +452,29 @@ void FCFS_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n\n", (double)(finishtime - idle) / finishtime);
 }
 
 void SJF_scheduling(int numProcess)
 {
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -506,13 +506,13 @@ void SJF_scheduling(int numProcess)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -528,12 +528,12 @@ void SJF_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -548,29 +548,29 @@ void SJF_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n\n", (double)(finishtime - idle) / finishtime);
 }
 
 void SRJF_scheduling(int numProcess)
 {
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -602,13 +602,13 @@ void SRJF_scheduling(int numProcess)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -625,12 +625,12 @@ void SRJF_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -647,12 +647,12 @@ void SRJF_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (readyQ_size > 0 && (runProcess->CPUburst_remain > readyQ[readyQ_front]->CPUburst_remain))
@@ -665,23 +665,23 @@ void SRJF_scheduling(int numProcess)
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         SJF_sort();
         // printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
-        add_ganttChat(runProcess->pid, time);
+        add_ganttChart(runProcess->pid, time);
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n\n", (double)(finishtime - idle) / finishtime);
 }
 
 void priority_scheduling(int numProcess)
 { // lower priority number, higher priority
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -712,13 +712,13 @@ void priority_scheduling(int numProcess)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -734,12 +734,12 @@ void priority_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -754,29 +754,29 @@ void priority_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n\n", (double)(finishtime - idle) / finishtime);
 }
 
 void premptive_priority_scheduling(int numProcess)
 { // lower priority number, higher priority
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -807,13 +807,13 @@ void premptive_priority_scheduling(int numProcess)
       runProcess = dequeue(readyQ, &readyQ_front, &readyQ_size);
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -829,12 +829,12 @@ void premptive_priority_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -851,12 +851,12 @@ void premptive_priority_scheduling(int numProcess)
         {
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (readyQ_size > 0 && (runProcess->priority > readyQ[readyQ_front]->priority))
@@ -869,23 +869,23 @@ void premptive_priority_scheduling(int numProcess)
         (runProcess->waitingTime) += time - (runProcess->tmpArrival);
         priority_sort();
         // printf("start new P%d remain CPU: %d\n", runProcess->pid, runProcess->CPUburst_remain);
-        add_ganttChat(runProcess->pid, time);
+        add_ganttChart(runProcess->pid, time);
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n\n", (double)(finishtime - idle) / finishtime);
 }
 
 void RR_sheduling(int numProcess, int timequantum)
 {
-  init_ganttChat();
+  init_ganttChart();
   init_jobQ(numProcess);
   init_queue(readyQ, &readyQ_front, &readyQ_rear, &readyQ_size);
   init_queue(waitQ, &waitQ_front, &waitQ_rear, &waitQ_size);
@@ -917,13 +917,13 @@ void RR_sheduling(int numProcess, int timequantum)
       (runProcess->waitingTime) += time - (runProcess->tmpArrival);
       runProcess->timequantum = tq;
       // printf("time: %d start P%d\n", time, runProcess->pid);
-      add_ganttChat(runProcess->pid, time);
+      add_ganttChart(runProcess->pid, time);
     }
     else if (readyQ_size == 0 && runProcess == NULL)
     {
       // printf("time: %d idle\n", time);
       idle++;
-      add_ganttChat(-1, time);
+      add_ganttChart(-1, time);
     }
     else if (runProcess != NULL)
     {
@@ -942,12 +942,12 @@ void RR_sheduling(int numProcess, int timequantum)
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           runProcess->timequantum = tq;
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->CPUburst_remain == 0) // terminate
@@ -963,12 +963,12 @@ void RR_sheduling(int numProcess, int timequantum)
           // printf("time: %d start new process: %d\n", time, runProcess->pid);
           (runProcess->waitingTime) += time - (runProcess->tmpArrival);
           runProcess->timequantum = tq;
-          add_ganttChat(runProcess->pid, time);
+          add_ganttChart(runProcess->pid, time);
         }
         else if (numTerminate != numProcess)
         {
           idle++;
-          add_ganttChat(-1, time);
+          add_ganttChart(-1, time);
         }
       }
       else if (runProcess->timequantum == 0 && readyQ_size > 0) // time slice expired
@@ -981,17 +981,17 @@ void RR_sheduling(int numProcess, int timequantum)
         runProcess->timequantum = tq;
         runProcess->waitingTime += time - (runProcess->tmpArrival);
         // printf("start P%d\n", runProcess->pid);
-        add_ganttChat(runProcess->pid, time);
+        add_ganttChart(runProcess->pid, time);
       }
     }
     time++;
   }
-  finishtime = time;
-  add_ganttChat(-2, time); // pid==-2: finish signal
+  finishtime = time-1;
+  add_ganttChart(-2, finishtime); // pid==-2: finish signal
 
-  print_ganttChat();
+  print_ganttChart();
   print_terminateQ();
-  printf("CPU total time: %d, idle time: %d\n", time, idle);
+  printf("CPU total time: %d, idle time: %d\n", finishtime, idle);
   printf("CPU utilization: %lf\n", (double)(finishtime - idle) / finishtime);
 }
 
@@ -999,15 +999,15 @@ int main(int argc, char *argv[])
 {
   int numProcess, tq;
 
-  printf("Welcome to CPU Scheduling Simulator!\n");
-  printf("Type process number: ");
+  printf("start CPU Scheduling Simulator\n");
+  printf("input process number: ");
   scanf("%d", &numProcess);
   if (numProcess > DEGREE_OF_MP || numProcess < 0)
   {
     printf("invalid number\n");
     return 0;
   }
-  printf("Time quantum: ");
+  printf("input timequantum: ");
   scanf("%d", &tq);
   if (tq <= 0)
   {
