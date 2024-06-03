@@ -57,6 +57,7 @@ void init_ganttChart();
 void add_ganttChart(int pid, int time);
 void print_ganttChart();
 
+void auto_create_process(int numProcess, int tq);
 void create_process(int numProcess, int tq);
 void enqueue(pProcess *queue, pProcess newProcess, int *rear, int *size);
 pProcess dequeue(pProcess *queue, int *front, int *size);
@@ -171,7 +172,7 @@ void print_process()
   printf("\n");
 }
 
-void create_process(int numProcess, int timequantum)
+void auto_create_process(int numProcess, int timequantum)
 {
   init_queue(job, &job_front, &job_rear, &job_size);
 
@@ -180,8 +181,8 @@ void create_process(int numProcess, int timequantum)
   {
     pProcess newProcess = (pProcess)malloc(sizeof(Process));
     newProcess->pid = i;
-    newProcess->CPUburst = (rand() % 10) + 2; // 2<=CPU burst time<=26
-    newProcess->IOburst = rand() % 10;        // 0<=IO burst time<=24;
+    newProcess->CPUburst = (rand() % 10) + 2; // 2<=CPU burst time<=11
+    newProcess->IOburst = rand() % 10;        // 0<=IO burst time<=9;
     if (newProcess->IOburst > 0)
       newProcess->IOstart = rand() % ((newProcess->CPUburst) - 1) + 1; // CPU - I/O - CPU
     else
@@ -189,6 +190,46 @@ void create_process(int numProcess, int timequantum)
     newProcess->arrival = rand() % (numProcess + 1);
     newProcess->tmpArrival = newProcess->arrival;
     newProcess->priority = rand() % numProcess + 1; // 1<=priority<=numProcess
+    newProcess->timequantum = timequantum;
+
+    newProcess->CPUburst_remain = newProcess->CPUburst;
+    newProcess->IOburst_remain = newProcess->IOburst;
+    newProcess->turnaroundTime = 0;
+    newProcess->waitingTime = 0;
+
+    enqueue(job, newProcess, &job_rear, &job_size);
+  }
+  print_process();
+}
+
+void create_process(int numProcess, int timequantum)
+{
+  init_queue(job, &job_front, &job_rear, &job_size);
+
+  for (int i = 0; i < numProcess; i++)
+  {
+    pProcess newProcess = (pProcess)malloc(sizeof(Process));
+    newProcess->pid = i;
+    printf("enter the P%d CPU burst time(2~11): ", i);
+    scanf("%d", &(newProcess->CPUburst));
+    // newProcess->CPUburst = (rand() % 10) + 2; // 2<=CPU burst time<=11
+    printf("enter the P%d IO burst time(0~9): ", i);
+    scanf("%d", &(newProcess->IOburst));
+    printf("enter the P%d IO start time(No I/O => enter 0): ", i);
+    scanf("%d", &(newProcess->IOstart));
+    printf("enter the P%d arrival time(0~n): ", i);
+    scanf("%d", &(newProcess->arrival));
+    printf("enter the P%d priority(lower priority number, higher priority)(1~n): ", i);
+    scanf("%d", &(newProcess->priority));
+
+    // newProcess->IOburst = rand() % 10;      // 0<=IO burst time<=9;
+    // if (newProcess->IOburst > 0)
+    //   newProcess->IOstart = rand() % ((newProcess->CPUburst) - 1) + 1; // CPU - I/O - CPU
+    // else
+    //   newProcess->IOstart = 0;
+    // newProcess->arrival = rand() % (numProcess + 1);
+    newProcess->tmpArrival = newProcess->arrival;
+    // newProcess->priority = rand() % numProcess + 1; // 1<=priority<=numProcess
     newProcess->timequantum = timequantum;
 
     newProcess->CPUburst_remain = newProcess->CPUburst;
@@ -664,7 +705,7 @@ void priority_scheduling(int numProcess)
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
 
-  printf("----------non preemptive priority scheduling----------\n");
+  printf("----------non preemptive priority scheduling (lower priority number, higher priority)----------\n");
   while (numTerminate != numProcess)
   {
     while ((jobQ_size > 0) && (jobQ[jobQ_front]->arrival == time))
@@ -751,7 +792,7 @@ void premptive_priority_scheduling(int numProcess)
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
 
-  printf("----------preemptive priority scheduling----------\n");
+  printf("----------preemptive priority scheduling (lower priority number, higher priority)----------\n");
   while (numTerminate != numProcess)
   {
     while ((jobQ_size > 0) && (jobQ[jobQ_front]->arrival == time))
@@ -954,7 +995,7 @@ void premptive_priority_RR_scheduling(int numProcess, int timequantum)
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
 
-  printf("----------preemptive priority with round robin scheduling----------\n");
+  printf("----------preemptive priority with round robin scheduling (lower priority number, higher priority)----------\n");
   while (numTerminate != numProcess)
   {
     while ((jobQ_size > 0) && (jobQ[jobQ_front]->arrival == time))
@@ -1084,7 +1125,25 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  create_process(numProcess, tq);
+  printf("if you want to create process yourself, enter 0\n");
+  printf("if you want to create process auto, enter 1\n");
+
+  int mode;
+  printf("enter 0 or 1: ");
+  scanf("%d", &mode);
+
+  switch (mode)
+  {
+  case 0:
+    create_process(numProcess, tq);
+    break;
+
+  case 1:
+    auto_create_process(numProcess, tq);
+    break;
+  default:
+    break;
+  }
   FCFS_scheduling(numProcess);
   SJF_scheduling(numProcess);
   SRJF_scheduling(numProcess);
