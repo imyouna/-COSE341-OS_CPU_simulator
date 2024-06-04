@@ -1,4 +1,4 @@
-CPU scheduling simulator
+CPU scheduling simulator\n\n
 
 <variables>
 job[]: after create processes, save in job[]
