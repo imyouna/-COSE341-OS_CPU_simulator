@@ -2,6 +2,27 @@
 
 This project is a CPU scheduling simulator that supports multiple scheduling algorithms. It includes various queues for job management and maintains a Gantt chart to visualize the scheduling process.
 
+## Typedef
+
+### Process
+
+```c
+typedef struct {
+    int pid;                // Process ID (0 to n-1)
+    int CPUburst;           // Total CPU burst time
+    int IOburst;            // Total I/O burst time
+    int IOstart;            // After 'IOstart' CPU burst time, I/O operation started
+    int arrival;            // Arrival time of process
+    int tmpArrival;         // Recent time when process goes to readyQ
+    int priority;           // Priority of process
+    int CPUburst_remain;    // Remaining CPU burst time
+    int IOburst_remain;     // Remaining I/O burst time
+    int timequantum;        // Remaining time quantum of process
+    int waitingTime;        // Waiting time of process
+    int turnaroundTime;     // Turnaround time of process
+} Process, *pProcess;
+```
+
 ## Variables
 
 - `job[]`: Stores processes after creation.
