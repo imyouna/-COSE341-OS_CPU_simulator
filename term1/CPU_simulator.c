@@ -19,7 +19,6 @@ typedef struct process
   int timequantum;
   int waitingTime;
   int turnaroundTime;
-  int responseTime;
 
 } Process;
 typedef Process *pProcess;
@@ -212,7 +211,7 @@ void create_process(int numProcess, int timequantum)
     newProcess->pid = i;
     printf("enter the P%d CPU burst time(2~11): ", i);
     scanf("%d", &(newProcess->CPUburst));
-    // newProcess->CPUburst = (rand() % 10) + 2; // 2<=CPU burst time<=11
+    //newProcess->CPUburst = (rand() % 10) + 2; // 2<=CPU burst time<=11
     printf("enter the P%d IO burst time(0~9): ", i);
     scanf("%d", &(newProcess->IOburst));
     printf("enter the P%d IO start time(No I/O => enter 0): ", i);
@@ -221,7 +220,7 @@ void create_process(int numProcess, int timequantum)
     scanf("%d", &(newProcess->arrival));
     printf("enter the P%d priority(lower priority number, higher priority)(1~n): ", i);
     scanf("%d", &(newProcess->priority));
-
+    
     // newProcess->IOburst = rand() % 10;      // 0<=IO burst time<=9;
     // if (newProcess->IOburst > 0)
     //   newProcess->IOstart = rand() % ((newProcess->CPUburst) - 1) + 1; // CPU - I/O - CPU
@@ -229,7 +228,7 @@ void create_process(int numProcess, int timequantum)
     //   newProcess->IOstart = 0;
     // newProcess->arrival = rand() % (numProcess + 1);
     newProcess->tmpArrival = newProcess->arrival;
-    // newProcess->priority = rand() % numProcess + 1; // 1<=priority<=numProcess
+    //newProcess->priority = rand() % numProcess + 1; // 1<=priority<=numProcess
     newProcess->timequantum = timequantum;
 
     newProcess->CPUburst_remain = newProcess->CPUburst;
@@ -428,7 +427,6 @@ void FCFS_scheduling(int numProcess)
   pProcess runProcess = NULL;
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
-  ;
 
   printf("----------FCFS scheduling----------\n");
   while (numTerminate != numProcess)
@@ -515,7 +513,6 @@ void SJF_scheduling(int numProcess)
   pProcess runProcess = NULL;
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
-  ;
 
   printf("----------non preemptive SJF scheduling----------\n");
   while (numTerminate != numProcess)
@@ -603,7 +600,6 @@ void SRJF_scheduling(int numProcess)
   pProcess runProcess = NULL;
 
   qsort(jobQ, numProcess, sizeof(pProcess), arrivalCompare);
-  ;
 
   printf("----------preemptive SJF(SRJF) scheduling----------\n");
   while (numTerminate != numProcess)
@@ -916,8 +912,17 @@ void RR_sheduling(int numProcess, int timequantum)
     }
     else if (runProcess != NULL)
     {
+      // runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
+      // runProcess->timequantum = runProcess->timequantum - 1;
       runProcess->CPUburst_remain = runProcess->CPUburst_remain - 1;
-      runProcess->timequantum = runProcess->timequantum - 1;
+      if (runProcess->timequantum > 0)
+      {
+        runProcess->timequantum = runProcess->timequantum - 1;
+      }
+      else
+      {
+        runProcess->timequantum = tq;
+      }
       if (runProcess->IOburst_remain && (runProcess->CPUburst) - (runProcess->CPUburst_remain) == runProcess->IOstart) // IO operation
       {
         runProcess->timequantum = tq; // timequantum reset
@@ -1131,13 +1136,13 @@ int main(int argc, char *argv[])
   int mode;
   printf("enter 0 or 1: ");
   scanf("%d", &mode);
-
+  
   switch (mode)
   {
   case 0:
     create_process(numProcess, tq);
     break;
-
+  
   case 1:
     auto_create_process(numProcess, tq);
     break;
